@@ -9,29 +9,20 @@
 constexpr size_t ARR_LENGTH = 1024;
 constexpr size_t BUFFER_SIZE = sizeof(float) * ARR_LENGTH;
 
-const char* ADDER_SRC = R"(
-	kernel void add_arrays(device const float* inA [[buffer(0)]],
-	                       device const float* inB [[buffer(1)]],
-	                       device float* result [[buffer(2)]],
-	                       uint index [[thread_position_in_grid]])
-	{
-        for (int i = 0; i < 100000; i++)
-        {
-	        result[index] += inA[index] + inB[index];
-        }
-	}
-)";
-
 int main() {
   // Get a handle on the GPU
   MTL::Device* gpu = MTL::CreateSystemDefaultDevice();
 
   // Compile source into metal library, then grab function handle
   NS::Error* compile_error = nullptr;
-  MTL::Library* adder_lib =
-      gpu->newLibrary(NS::String::string(ADDER_SRC, NS::UTF8StringEncoding),
-                      nullptr, &compile_error);
-  if (adder_lib == nullptr) assert(false);
+  MTL::Library* adder_lib = gpu->newLibrary(
+      NS::String::string("add_arrays.metallib", NS::UTF8StringEncoding),
+      &compile_error);
+  if (adder_lib == nullptr) {
+    std::cout << compile_error->localizedDescription()->utf8String()
+              << std::endl;
+    assert(false);
+  }
   MTL::Function* adder_func = adder_lib->newFunction(
       NS::String::string("add_arrays", NS::UTF8StringEncoding));
 
